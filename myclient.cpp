@@ -13,6 +13,7 @@
 
 using namespace std;
 
+int debug = 0;
 unsigned char recv_buffer[READ_BUFFER_SIZE];
 
 int client_fd;
@@ -98,12 +99,16 @@ int main(int argc, char const *argv[]) {
                 Connect(client_fd, server_address);
                 state = 1;
                 pthread_create(&childthread, nullptr, threadFunction, (void *) &client_fd);
+                cout<<"Connect success.\n";
                 break;
             }
             case 2: {//disconnect
-                close(client_fd);
-                pthread_cancel(childthread);
-                cout<<"Close socket success\n";
+                if(state == 0) cout<<"No connection\n";
+                else {
+                    close(client_fd);
+                    pthread_cancel(childthread);
+                    cout<<"Close socket success\n";
+                    }
                 break;
 
             }
@@ -133,7 +138,7 @@ int main(int argc, char const *argv[]) {
 
                 else  cout<<ctime(&valread)<<endl;
 
-                cout << "fuck hey" << endl;
+                if(debug) cout << "fuck hey" << endl;
 
                 break;
             }
@@ -143,7 +148,7 @@ int main(int argc, char const *argv[]) {
                 while (packet_queue.empty());
 
                 if (packet_queue.empty()){
-                    cout<<"no data"<<endl;
+                    cout<<"No data"<<endl;
                 }
                 string name = "";
                 auto iter=packet_queue.begin();
@@ -157,9 +162,9 @@ int main(int argc, char const *argv[]) {
                 }
 
                 if (name=="") cout << "No name packet received or name is empty" << endl;
-                else   cout<<"name is"<<name<<endl;
+                else   cout<<"name is: "<<name<<endl;
 
-                cout << "fuck hey" << endl;
+                if(debug) cout << "fuck hey" << endl;
                 break;
             }
 
@@ -169,7 +174,7 @@ int main(int argc, char const *argv[]) {
                 //
                 GetList(state, client_fd,-1);
 
-                cout<<"damn1:"<<*(int*)(((Packet*)recv_buffer)->body.data)<<endl;
+                if(debug) cout<<"damn1:"<<*(int*)(((Packet*)recv_buffer)->body.data)<<endl;
 
                 while (packet_queue.empty());
 
@@ -177,16 +182,20 @@ int main(int argc, char const *argv[]) {
                     cout<<"no data"<<endl;
                 }
                 int n = -1;
+                cout<<"************\n";
+                cout<<"Active client list:\n";
+                cout<<"************\n";
                 auto iter=packet_queue.begin();
                 for(;iter!=packet_queue.end();)
                 {
                     if (iter->header.op==ACTIVE_LIST) {
                         n = *(int*)(iter->body.data);
                         for (int i = 0; i < n; ++i) {
-                            if(iter->body.list[i].isThisMyfd==1) cout<<"num: "<<iter->body.list[i].num <<"(me)"<<endl;
+                            if(iter->body.list[i].isThisMyfd==1) cout<<"num: "<<iter->body.list[i].num <<" (me)"<<endl;
                             else cout<<"num: "<<iter->body.list[i].num <<endl;
                             cout<<"ip: "<<iter->body.list[i].ip<<endl;
                             cout<<"port: "<<iter->body.list[i].port<<endl;
+                            cout<<"************\n";
 
                         }
                         packet_queue.erase(iter);
@@ -195,22 +204,23 @@ int main(int argc, char const *argv[]) {
                 }
 
                 if (n==-1) cout << "No name packet received or name is empty" << endl;
-                else   cout<<"number of client is"<<n<<endl;
-                cout << "fuck hey" << endl;
+                else   cout<<"Total number of client is: "<<n<<endl;
+                if(debug) cout << "fuck hey" << endl;
 
                 break;
             }
             case 6: {//send message
-                cout<<"Please input destination fd:\n";
-                int dest_fd = -1;
-                cin>>dest_fd;
+                
                 cout<<"Please input your fd(your id listed by commander 5):\n";
                 int tr_fd = -1;
                 cin>>tr_fd;
+                cout<<"Please input destination fd:\n";
+                int dest_fd = -1;
+                cin>>dest_fd;
                 SendMessage(state, client_fd, dest_fd,tr_fd);
-                cout<<"aaa\n";
+                if(debug) cout<<"aaa\n";
                 while (packet_queue.empty());
-                cout<<"bbb\n";
+                if(debug) cout<<"bbb\n";
                 if (packet_queue.empty()){
                     cout<<"no data"<<endl;
                 }
@@ -236,11 +246,11 @@ int main(int argc, char const *argv[]) {
 
                 if (isOk=="") cout << "No send packet received " << endl;
 
-                else   cout<<"ok motherfucker"<<endl;
+                else  cout<<"Get a reply. Send success."<<endl;
 
-                cout<<"damn3:"<<isOk<<endl;
+                if(debug) cout<<"damn3:"<<isOk<<endl;
 
-                cout << "fuck hey" << endl;
+                if(debug) cout << "fuck hey" << endl;
 
                 break;
             }
@@ -270,7 +280,7 @@ void *threadFunction(void *args) {
 
         int flag = 1;
 
-        cout << "rece begin\n";
+        if(debug) cout << "rece begin\n";
         memset(recv_buffer, 0, READ_BUFFER_SIZE);
 
         int head_total = sizeof(Packet);
@@ -278,13 +288,13 @@ void *threadFunction(void *args) {
         int bytes = 0;
         int sockfd = *(int *) args;
         //cout<<"fd:"<<sockfd<<endl;
-        cout << "rece 1\n";
+        if(debug) cout << "rece 1\n";
         Packet temp ;
         do {
-            cout << "rece 1111\n";
+            if(debug) cout << "rece 1111\n";
             bytes = read(sockfd, &temp, head_total - received);
-            cout<<"read type"<<temp.header.op<<endl;
-            cout<<"bytes:"<<bytes<<endl;
+            if(debug) cout<<"read type"<<temp.header.op<<endl;
+            if(debug) cout<<"bytes:"<<bytes<<endl;
             if (bytes < 0){
                 perror("ERROR reading recv1_buffer from socket");
                 flag = 0;
@@ -296,15 +306,15 @@ void *threadFunction(void *args) {
         } while (received < head_total);
 
 
-        cout <<"l:"<<bytes<<endl;
+        if(debug) cout <<"l:"<<bytes<<endl;
         Packet *phead = (Packet *) recv_buffer;
         int data_length = phead->header.length - sizeof(PacketHeader);
-        cout << "time le" << data_length << endl;
+        if(debug) cout << "time le" << data_length << endl;
 
-        printf("datais:%s\n",phead->body.data);
+        if(debug) printf("datais:%s\n",phead->body.data);
         if (data_length>0&&data_length> sizeof(Packet)- sizeof(PacketHeader)){//need extra read
             received = 0;
-            cout<<"extra read\n";
+            if(debug) cout<<"extra read\n";
             do {
                 bytes = read(sockfd, recv_buffer+ head_total+received, data_length - received);
 
@@ -320,18 +330,18 @@ void *threadFunction(void *args) {
         }
 
 
-        printf("datais:%s\n",phead->body.data);
-        cout << "rece done\n";
+        if(debug) printf("datais:%s\n",phead->body.data);
+        if(debug) cout << "rece done\n";
 
         packet_queue.push_front(temp);
-        cout<<"type:"<<packet_queue.front().header.op<<endl;
+        if(debug) cout<<"type:"<<packet_queue.front().header.op<<endl;
         // here handle when get a message request; it's better to be handled in the main thread; but I don't have a good idea as it doesn't read any keyboard input; Maybe create a new thread or just put it here 
         if (packet_queue.front().header.op == MESSAGE&&packet_queue.front().header.type==1) {
-            cout<<"motherfucker\n";
+            if(debug) cout<<"motherfucker\n";
             Packet to_send(packet_queue.front().header.destination, packet_queue.front().header.source, sizeof(Packet), 0, MESSAGE, nullptr);
             strncpy((char*)to_send.body.data,"ok", strlen("ok")+1);//copy data
             send(client_fd, &to_send, sizeof(Packet), 0);
-            cout<<"des"<<to_send.header.destination<<"src "<<to_send.header.source<<" back succuess\n";
+            cout<<"destination:"<<to_send.header.destination<<"src "<<to_send.header.source<<" reply succuess\n";
             packet_queue.pop_front();
         }
         if (!flag) break;
@@ -349,7 +359,7 @@ void GetTime(int state, int source_fd,int dest_fd) {
     Packet to_send(source_fd, dest_fd, sizeof(Packet), 1, TIME, nullptr);
     send(source_fd, &to_send, sizeof(Packet), 0);
 
-    cout << "send success\n";
+    if(debug) cout << "send success\n";
 
 }
 
@@ -360,10 +370,10 @@ void SendMessage(int state, int source_fd, int dest_fd,int true_s_fd) {
     }
 
     Packet to_send(true_s_fd, dest_fd, sizeof(Packet), 1, MESSAGE, nullptr);
-    cout<<"babababab"<<true_s_fd<<"  des:"<<dest_fd<<endl;
+    if(debug) cout<<"babababab"<<true_s_fd<<"  des:"<<dest_fd<<endl;
     send(source_fd, &to_send, sizeof(Packet), 0);
 
-    cout << "send success\n";
+    if(debug) cout << "send success\n";
 
 }
 
@@ -376,7 +386,7 @@ void GetList(int state, int source_fd, int dest_fd) {
     Packet to_send(source_fd, dest_fd, sizeof(Packet), 1, ACTIVE_LIST, nullptr);
     send(source_fd, &to_send, sizeof(Packet), 0);
 
-    cout << "send success\n";
+    if(debug) cout << "send success\n";
 }
 
 void GetName(int state, int source_fd,int dest_fd) {
@@ -388,5 +398,5 @@ void GetName(int state, int source_fd,int dest_fd) {
     Packet to_send(source_fd, dest_fd, sizeof(Packet), 1, NAME, nullptr);
     send(source_fd, &to_send, sizeof(Packet), 0);
 
-    cout << "send success\n";
+    if(debug) cout << "send success\n";
 }

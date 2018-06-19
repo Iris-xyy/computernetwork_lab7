@@ -23,7 +23,7 @@
 #define MAX_LISTEN_SIZE 10 //max size of requst queue
 
 using namespace std;
-
+int debug = 0;
 char *server_name = "ken";
 void *clientThread(void *);
 
@@ -155,7 +155,7 @@ void *clientThread(void *args)
             received += bytes;
         } while (received < packet_size);
 
-        cout << "l is :" << bytes << endl;
+        if(debug) cout << "l is :" << bytes << endl;
         if (bytes == 0)
         {
             cout << "The client is shut down\n"
@@ -176,7 +176,7 @@ void *clientThread(void *args)
         }
         Packet *phead = (Packet *)test;
         int data_length = phead->header.length - sizeof(PacketHeader);
-        cout << "time le" << data_length << endl;
+        if(debug) cout << "time le" << data_length << endl;
 
         printf("datais:%s\n", phead->body.data);
         if (data_length > 0 && data_length > sizeof(Packet) - sizeof(PacketHeader))
@@ -209,7 +209,7 @@ void *clientThread(void *args)
             
             //debug info
             cout << "Send to client success " << sizeof(to_send) << endl;
-            cout << "Send Time to client success " << sizeof(to_send) - sizeof(PacketHeader) << endl;
+            cout << "Send Time to client success " << endl;
             printf("raw data is : %s\n", to_send.body.data);
             printf("data is : %ld\n", *((time_t *)to_send.body.data));
             cnt++;
@@ -227,7 +227,7 @@ void *clientThread(void *args)
             send(conn_fd, &to_send, sizeof(to_send),0); 
 
             cout << "Send to client success " << sizeof(to_send) << endl;
-            cout << "Send name to client success " << sizeof(to_send) - sizeof(PacketHeader) << endl;
+            cout << "Send name to client success "  << endl;
             printf("raw data is : %s\n", (char *)to_send.body.data);
             cout << ((char *)to_send.body.data) << endl;
             cnt++;
@@ -250,9 +250,7 @@ void *clientThread(void *args)
                     cout<<"done\n";
                     }
                 else to_send.body.list[i].isThisMyfd = 0;
-                // for (int j = 0; j <15 ; ++j) {
-                //     to_send.body.list[i].ip[j] = client_list[i].ip[j];
-                // }
+                
             }
             int n = client_list.size();
 
