@@ -64,7 +64,17 @@ int main(int argc, char const *argv[]) {
     //bcopy((char *)server->h_addr, (char *) &server_address.sin_addr.s_addr, server->h_length);
 
     server_address.sin_port = htons(port_num);
-
+    cout<<"************************************\n";
+    cout<<"*   Welcome to use this client!    *\n";
+    cout<<"************************************";
+    cout<<"Commander 1: connect the server\n";
+    cout<<"Commander 2: disconnect\n";
+    cout<<"Commander 3: get time\n";
+    cout<<"Commander 4: get server name\n";
+    cout<<"Commander 5: get client list\n";
+    cout<<"Commander 6: send message\n";
+    cout<<"Commander 7: exit\n";
+    cout<<"************************************";
     cout << "Please input your commander:\n";
 
     //todo: add a menu display
@@ -155,7 +165,7 @@ int main(int argc, char const *argv[]) {
 
             case 5: {
                 //get client list
-                //todo: how a client know its fd in server side? server sends a new packet?
+                //
                 //
                 GetList(state, client_fd,-1);
 
