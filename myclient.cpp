@@ -88,7 +88,7 @@ int main(int argc, char const *argv[]) {
 
         switch (commander) {
             case 1: {//connect
-             //create client socket
+                //create client socket
                 client_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
                 if (client_fd < 0) {
@@ -108,7 +108,7 @@ int main(int argc, char const *argv[]) {
                     close(client_fd);
                     pthread_cancel(childthread);
                     cout<<"Close socket success\n";
-                    }
+                }
                 break;
 
             }
@@ -169,7 +169,7 @@ int main(int argc, char const *argv[]) {
             }
 
             case 5: {//get client list
-                
+
                 //
                 //
                 GetList(state, client_fd,-1);
@@ -210,7 +210,7 @@ int main(int argc, char const *argv[]) {
                 break;
             }
             case 6: {//send message
-                
+
                 cout<<"Please input your fd(your id listed by commander 5):\n";
                 int tr_fd = -1;
                 cin>>tr_fd;
@@ -229,18 +229,18 @@ int main(int argc, char const *argv[]) {
                 for(;iter!=packet_queue.end();)
                 {
 
-                        if (iter->header.op==MESSAGE&&iter->header.type==0) {
-                            isOk = "ok";
-                            if (iter->header.source==dest_fd&&isOk =="ok") cout<<"Get message done!\n";
+                    if (iter->header.op==MESSAGE&&iter->header.type==0) {
+                        isOk = "ok";
+                        if (iter->header.source==dest_fd&&isOk =="ok") cout<<"Get message done!\n";
 
-                            packet_queue.erase(iter);
-                            break;
-                        }else if(iter->header.type==2) {
-                            isOk = "error";
-                            cout<<"No such client linked\n"<<endl;
-                            packet_queue.erase(iter);
-                            break;
-                        } else iter++;
+                        packet_queue.erase(iter);
+                        break;
+                    }else if(iter->header.type==2) {
+                        isOk = "error";
+                        cout<<"No such client linked\n"<<endl;
+                        packet_queue.erase(iter);
+                        break;
+                    } else iter++;
                 }
 
 
@@ -260,6 +260,44 @@ int main(int argc, char const *argv[]) {
                 pthread_cancel(childthread);
                 cout<<"Exit success.\n";
                 flag = 0;
+                break;
+            }
+            case 8:{
+                for(int i=0;i<10000;i++){
+                    GetTime(state, client_fd,-1);
+                }
+                cout<<"Send 100 time request\n";
+                int count = 0;
+                for(int i=0;i<10000;i++){
+                    //while (packet_queue.empty());
+
+                    if (packet_queue.empty()){
+                        cout<<"no data"<<endl;
+                    }
+                    time_t valread= -1;
+
+                    auto iter=packet_queue.begin();
+                    for(;iter!=packet_queue.end();)
+                    {
+                        if (iter->header.op==TIME) {
+                            valread= *(time_t*)(iter->body.data);
+                            count++;
+                            //!!ATTENTION!! erase method will influence iterator; so if use erase,must break; or you will get segmentation fault
+                            // write like this way to avoid such fault;
+                            packet_queue.erase(iter);
+                            break;
+                        } else iter++;
+                    }
+
+                    if (valread==-1) cout << "No time packet received" << endl;
+
+                    else  cout<<ctime(&valread)<<endl;
+
+                    if(debug) cout << "fuck hey" << endl;
+                }
+
+                cout<<"Got "<<count<<" time reply."<<endl;
+
                 break;
             }
 

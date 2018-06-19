@@ -5,6 +5,7 @@
         "string": "cpp",
         "string_view": "cpp",
         "vector": "cpp",
-        "queue": "cpp"
+        "queue": "cpp",
+        "locale": "cpp"
     }
 }
