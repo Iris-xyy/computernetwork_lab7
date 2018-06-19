@@ -110,10 +110,7 @@ int main(int argc, char *argv[])
         char* ip_address = inet_ntoa(client_address.sin_addr);
         memset(temp.ip, 0, 15);
         strncpy(temp.ip,ip_address,strlen(ip_address));
-        // for (int i = 0; i < damn.length(); ++i)
-        // {
-        //     temp.ip[i] = damn[i];
-        // }
+       
         temp.port = (int)ntohs(client_address.sin_port);
         client_list.push_back(temp);
         
@@ -235,7 +232,7 @@ void *clientThread(void *args)
     
         }
         else if (phead->header.op == ACTIVE_LIST)
-        { //use an array
+        { //use an vector
             cout << "Get active list request\n";
 
             Packet to_send(listen_fd, conn_fd, sizeof(Packet), 0, ACTIVE_LIST, nullptr);
@@ -293,7 +290,7 @@ void *clientThread(void *args)
             if (isExist == 0)
             {
                 perror("No such client!\n");
-                Packet error_info(listen_fd, conn_fd, sizeof(Packet), 0, ERROR, nullptr);
+                Packet error_info(listen_fd, conn_fd, sizeof(Packet), 2, ERROR, nullptr);
                 send(conn_fd, &error_info, sizeof(error_info),0); //maybe bug
                 cout << "Send error message to client success " << conn_fd << endl;
             }
@@ -311,7 +308,7 @@ void *clientThread(void *args)
             cout << "cnt:" << cnt << endl;
         }
         else if (phead->header.op == MESSAGE && phead->header.type == 0)
-        { //use an array
+        { 
             cout << "Get message reply\n";
 
             Packet to_send = *phead;

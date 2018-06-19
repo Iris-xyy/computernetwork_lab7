@@ -78,7 +78,7 @@ int main(int argc, char const *argv[]) {
     cout<<"************************************\n";
     cout << "Please input your commander:\n";
 
-    //todo: add a menu display
+
     pthread_t childthread;
 
     int commander = 0;
@@ -168,8 +168,8 @@ int main(int argc, char const *argv[]) {
                 break;
             }
 
-            case 5: {
-                //get client list
+            case 5: {//get client list
+                
                 //
                 //
                 GetList(state, client_fd,-1);
@@ -235,7 +235,7 @@ int main(int argc, char const *argv[]) {
 
                             packet_queue.erase(iter);
                             break;
-                        }else if(iter->header.op==ERROR) {
+                        }else if(iter->header.type==2) {
                             isOk = "error";
                             cout<<"No such client linked\n"<<endl;
                             packet_queue.erase(iter);
@@ -246,7 +246,8 @@ int main(int argc, char const *argv[]) {
 
                 if (isOk=="") cout << "No send packet received " << endl;
 
-                else  cout<<"Get a reply. Send success."<<endl;
+                else if (isOk=="error") cout << "Use commander 5 to find the linked client " << endl;
+                else cout<<"Get a reply. Send success."<<endl;
 
                 if(debug) cout<<"damn3:"<<isOk<<endl;
 
@@ -254,8 +255,10 @@ int main(int argc, char const *argv[]) {
 
                 break;
             }
-            case 7: {
-                close(client_fd);//exit
+            case 7: {//exit
+                close(client_fd);
+                pthread_cancel(childthread);
+                cout<<"Exit success.\n";
                 flag = 0;
                 break;
             }
@@ -306,7 +309,6 @@ void *threadFunction(void *args) {
         } while (received < head_total);
 
 
-        if(debug) cout <<"l:"<<bytes<<endl;
         Packet *phead = (Packet *) recv_buffer;
         int data_length = phead->header.length - sizeof(PacketHeader);
         if(debug) cout << "time le" << data_length << endl;
