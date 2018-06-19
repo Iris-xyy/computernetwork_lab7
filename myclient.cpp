@@ -60,13 +60,13 @@ int main(int argc, char const *argv[]) {
     }
     memset((char *)&server_address,0,sizeof(server_address));//initial
     server_address.sin_family = AF_INET;
-    strncpy((char *) &server_address.sin_addr.s_addr,(char *)server->h_addr,server->h_length);
+    memmove((char *) &server_address.sin_addr.s_addr,(char *)server->h_addr,server->h_length);
     //bcopy((char *)server->h_addr, (char *) &server_address.sin_addr.s_addr, server->h_length);
 
     server_address.sin_port = htons(port_num);
     cout<<"************************************\n";
     cout<<"*   Welcome to use this client!    *\n";
-    cout<<"************************************";
+    cout<<"************************************\n";
     cout<<"Commander 1: connect the server\n";
     cout<<"Commander 2: disconnect\n";
     cout<<"Commander 3: get time\n";
@@ -74,7 +74,7 @@ int main(int argc, char const *argv[]) {
     cout<<"Commander 5: get client list\n";
     cout<<"Commander 6: send message\n";
     cout<<"Commander 7: exit\n";
-    cout<<"************************************";
+    cout<<"************************************\n";
     cout << "Please input your commander:\n";
 
     //todo: add a menu display
