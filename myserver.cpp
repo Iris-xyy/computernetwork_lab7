@@ -19,8 +19,15 @@
 #include <fstream>
 #include <stdlib.h>
 #include <string>
-
+#include <netinet/tcp.h>
 #define MAX_LISTEN_SIZE 10 //max size of requst queue
+int keepalive = 1;         // 打开keepalive
+
+int keepidle = 10000; // 空闲10s开始发送检测包（系统默认2小时） 注意Mac下单位是毫秒！！！
+
+int keepinterval = 1; // 发送检测包间隔 （系统默认75s）
+
+int keepcount = 5; // 发送次数如果5次都没有回应，就认定peer端断开了。（系统默认9次）
 
 using namespace std;
 int debug = 0;
@@ -57,6 +64,14 @@ int main(int argc, char *argv[])
 
     //create socket
     listen_fd = socket(AF_INET, SOCK_STREAM, 0);
+    unsigned int timeout = 10; // 10s
+    //setsockopt(listen_fd, IPPROTO_TCP, TCP_USER_TIMEOUT, &timeout, sizeof(timeout)); //for linux
+    setsockopt(listen_fd, SOL_SOCKET, SO_KEEPALIVE, &keepalive, sizeof(keepalive));
+    setsockopt(listen_fd, IPPROTO_TCP, TCP_KEEPALIVE, &keepidle, sizeof(keepidle));
+    setsockopt(listen_fd, IPPROTO_TCP, TCP_CONNECTIONTIMEOUT, &timeout, sizeof(timeout)); //for mac
+    setsockopt(listen_fd, IPPROTO_TCP, TCP_KEEPINTVL, &keepinterval, sizeof(keepinterval));
+
+    setsockopt(listen_fd, IPPROTO_TCP, TCP_KEEPCNT, &keepcount, sizeof(keepcount));
 
     if (listen_fd < 0)
     {
@@ -64,7 +79,7 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    memset((char *)&server_address,0,sizeof(server_address));//initial
+    memset((char *)&server_address, 0, sizeof(server_address)); //initial
 
     server_address.sin_family = AF_INET;
     //server_addresssin_addr.s_addr = inet_addr("127.0.0.1");//bind to localhost only
@@ -107,13 +122,13 @@ int main(int argc, char *argv[])
         printf("port is: %d\n", (int)ntohs(client_address.sin_port));
         client_info temp;
         temp.num = conn_fd;
-        char* ip_address = inet_ntoa(client_address.sin_addr);
+        char *ip_address = inet_ntoa(client_address.sin_addr);
         memset(temp.ip, 0, 15);
-        strncpy(temp.ip,ip_address,strlen(ip_address));
-       
+        strncpy(temp.ip, ip_address, strlen(ip_address));
+
         temp.port = (int)ntohs(client_address.sin_port);
         client_list.push_back(temp);
-        
+
         int *args = &conn_fd;
         pthread_create(&thread_pool[thread_num], NULL, clientThread, (void *)args);
 
@@ -145,14 +160,16 @@ void *clientThread(void *args)
         int bytes = 0;
         do
         {
-            bytes = recv(conn_fd, test + received, packet_size - received,0);
-            if (bytes < 0)  cerr<<"ERROR reading recv_buffer from socket";
+            bytes = recv(conn_fd, test + received, packet_size - received, 0);
+            if (bytes < 0)
+                cerr << "ERROR reading recv_buffer from socket";
             if (bytes == 0) //the server is closed
                 break;
             received += bytes;
         } while (received < packet_size);
 
-        if(debug) cout << "l is :" << bytes << endl;
+        if (debug)
+            cout << "l is :" << bytes << endl;
         if (bytes == 0)
         {
             cout << "The client is shut down\n"
@@ -173,18 +190,20 @@ void *clientThread(void *args)
         }
         Packet *phead = (Packet *)test;
         int data_length = phead->header.length - sizeof(PacketHeader);
-        if(debug) cout << "time le" << data_length << endl;
+        if (debug)
+            cout << "time le" << data_length << endl;
 
         printf("datais:%s\n", phead->body.data);
         if (data_length > 0 && data_length > sizeof(Packet) - sizeof(PacketHeader))
-        { //need extra read; not used 
+        { //need extra read; not used
             received = 0;
             cout << "extra read\n";
             do
             {
-                bytes = recv(conn_fd, test + packet_size + received, data_length - received,0);
+                bytes = recv(conn_fd, test + packet_size + received, data_length - received, 0);
 
-                if (bytes < 0) cerr << "ERROR reading recv123_buffer from socket";
+                if (bytes < 0)
+                    cerr << "ERROR reading recv123_buffer from socket";
                 if (bytes == 0) //the server is closed
                 {
                     break;
@@ -202,8 +221,8 @@ void *clientThread(void *args)
             Packet to_send(listen_fd, conn_fd, sizeof(Packet), 0, TIME, nullptr);
             strncpy((char *)to_send.body.data, (const char *)&nowtime, sizeof(nowtime)); //copy data
 
-            send(conn_fd, &to_send, sizeof(to_send),0); 
-            
+            send(conn_fd, &to_send, sizeof(to_send), 0);
+
             //debug info
             cout << "Send to client success " << sizeof(to_send) << endl;
             cout << "Send Time to client success " << endl;
@@ -221,15 +240,14 @@ void *clientThread(void *args)
 
             strncpy((char *)to_send.body.data, (const char *)server_name, strlen(server_name) + 1); //copy data
 
-            send(conn_fd, &to_send, sizeof(to_send),0); 
+            send(conn_fd, &to_send, sizeof(to_send), 0);
 
             cout << "Send to client success " << sizeof(to_send) << endl;
-            cout << "Send name to client success "  << endl;
+            cout << "Send name to client success " << endl;
             printf("raw data is : %s\n", (char *)to_send.body.data);
             cout << ((char *)to_send.body.data) << endl;
             cnt++;
             cout << "cnt:" << cnt << endl;
-    
         }
         else if (phead->header.op == ACTIVE_LIST)
         { //use an vector
@@ -237,23 +255,24 @@ void *clientThread(void *args)
 
             Packet to_send(listen_fd, conn_fd, sizeof(Packet), 0, ACTIVE_LIST, nullptr);
             for (int i = 0; i < client_list.size(); ++i)
-            {   
-                
+            {
+
                 to_send.body.list[i].port = client_list[i].port;
                 to_send.body.list[i].num = client_list[i].num;
                 strncpy(to_send.body.list[i].ip, client_list[i].ip, 15);
-                if(conn_fd==to_send.body.list[i].num) {
+                if (conn_fd == to_send.body.list[i].num)
+                {
                     to_send.body.list[i].isThisMyfd = 1;
-                    cout<<"done\n";
-                    }
-                else to_send.body.list[i].isThisMyfd = 0;
-                
+                    cout << "done\n";
+                }
+                else
+                    to_send.body.list[i].isThisMyfd = 0;
             }
             int n = client_list.size();
 
             strncpy((char *)to_send.body.data, (const char *)&n, sizeof(int)); //copy data
 
-            send(conn_fd, &to_send, sizeof(to_send),0); 
+            send(conn_fd, &to_send, sizeof(to_send), 0);
 
             //debug info
             cout << "Send to client success " << sizeof(to_send) << endl;
@@ -261,7 +280,7 @@ void *clientThread(void *args)
             printf("raw data is : %s\n", (char *)to_send.body.data);
             printf("num of data is : %d\n", *(int *)to_send.body.data);
             for (int i = 0; i < *(int *)to_send.body.data; ++i)
-            {   
+            {
 
                 cout << to_send.body.list[i].port << endl;
                 cout << to_send.body.list[i].ip << endl;
@@ -285,19 +304,19 @@ void *clientThread(void *args)
                     isExist = 1;
                     break;
                 }
-            } 
+            }
             //error handle
             if (isExist == 0)
             {
                 perror("No such client!\n");
                 Packet error_info(listen_fd, conn_fd, sizeof(Packet), 2, ERROR, nullptr);
-                send(conn_fd, &error_info, sizeof(error_info),0); //maybe bug
+                send(conn_fd, &error_info, sizeof(error_info), 0); //maybe bug
                 cout << "Send error message to client success " << conn_fd << endl;
             }
             else
             {
                 cout << "req:" << to_send.header.source << " to " << to_send.header.destination << endl;
-                send(to_send.header.destination, &to_send, sizeof(to_send),0); //maybe bug
+                send(to_send.header.destination, &to_send, sizeof(to_send), 0); //maybe bug
 
                 cout << "Send message request to client success " << sizeof(to_send) << endl;
                 printf("raw data is : %s\n", (char *)to_send.body.data);
@@ -308,13 +327,13 @@ void *clientThread(void *args)
             cout << "cnt:" << cnt << endl;
         }
         else if (phead->header.op == MESSAGE && phead->header.type == 0)
-        { 
+        {
             cout << "Get message reply\n";
 
             Packet to_send = *phead;
 
             cout << to_send.header.source << " send to:" << to_send.header.destination << endl;
-            send(to_send.header.destination, &to_send, sizeof(to_send),0); //maybe bug
+            send(to_send.header.destination, &to_send, sizeof(to_send), 0); //maybe bug
 
             cout << "Send message reply to client success " << sizeof(to_send) << endl;
             printf("raw data is : %s\n", (char *)to_send.body.data);

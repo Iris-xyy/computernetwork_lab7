@@ -6,6 +6,11 @@
         "string_view": "cpp",
         "vector": "cpp",
         "queue": "cpp",
-        "locale": "cpp"
+        "locale": "cpp",
+        "fstream": "cpp",
+        "chrono": "cpp",
+        "limits": "cpp",
+        "ratio": "cpp",
+        "algorithm": "cpp"
     }
 }
