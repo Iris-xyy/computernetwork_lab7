@@ -87,6 +87,7 @@ int main(int argc, char const *argv[])
     cout << "Commander 5: get client list\n";
     cout << "Commander 6: send message\n";
     cout << "Commander 7: exit\n";
+    cout << "Commander 8: send 500 times \n";
     cout << "************************************\n";
     cout << "Please input your commander:\n";
 
@@ -107,10 +108,9 @@ int main(int argc, char const *argv[])
 
             setsockopt(client_fd, SOL_SOCKET, SO_KEEPALIVE, &keepalive, sizeof(keepalive));
             setsockopt(client_fd, IPPROTO_TCP, TCP_KEEPALIVE, &keepidle, sizeof(keepidle));
-
             setsockopt(client_fd, IPPROTO_TCP, TCP_KEEPINTVL, &keepinterval, sizeof(keepinterval));
-
             setsockopt(client_fd, IPPROTO_TCP, TCP_KEEPCNT, &keepcount, sizeof(keepcount));
+            
             if (client_fd < 0)
             {
                 cerr << "Cannot open socket" << endl;
